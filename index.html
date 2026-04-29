@@ -1,220 +1,186 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Spell Cast Indonesia</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<title>Game Spellcast Mini</title>
 
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: radial-gradient(circle at top, #1a1a2e, #0f0f1a);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #1e1e2f;
+  color: white;
+}
 
-    .container {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 30px;
-      width: 380px;
-      text-align: center;
-      box-shadow: 0 0 25px rgba(0, 212, 255, 0.3);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
+h1 {
+  margin-top: 20px;
+}
 
-    h1 {
-      margin-bottom: 10px;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff;
-    }
+#grid {
+  display: grid;
+  grid-template-columns: repeat(5, 60px);
+  gap: 10px;
+  justify-content: center;
+  margin: 20px auto;
+}
 
-    .spell {
-      font-size: 28px;
-      margin: 20px 0;
-      color: #ffd700;
-      text-shadow: 0 0 10px #ffd700;
-      transition: 0.3s;
-    }
+.tile {
+  width: 60px;
+  height: 60px;
+  background: #2d2d44;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: 0.2s;
+}
 
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      text-align: center;
-      font-size: 16px;
-      margin-top: 10px;
-      background: #111;
-      color: white;
-      border: 1px solid #00d4ff;
-    }
+.tile:hover {
+  background: #3a3a5a;
+}
 
-    input:focus {
-      box-shadow: 0 0 10px #00d4ff;
-    }
+.tile.selected {
+  background: #4cafef;
+}
 
-    .info {
-      margin-top: 15px;
-      font-size: 14px;
-      display: flex;
-      justify-content: space-between;
-    }
+#info {
+  margin-top: 15px;
+}
 
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(45deg, #00d4ff, #0077ff);
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #4cafef;
+  color: white;
+  cursor: pointer;
+}
 
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px #00d4ff;
-    }
+button:hover {
+  background: #3a9bdc;
+}
+</style>
 
-    .status {
-      margin-top: 10px;
-      font-weight: bold;
-      height: 20px;
-    }
-
-    .benar {
-      color: #00ff88;
-      text-shadow: 0 0 5px #00ff88;
-    }
-
-    .salah {
-      color: #ff4d4d;
-      text-shadow: 0 0 5px #ff4d4d;
-    }
-
-    .game-over {
-      color: #ff4d4d;
-      font-size: 22px;
-      margin-top: 10px;
-    }
-  </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>🧙 Spell Cast</h1>
-  <p>Ketik mantra dengan cepat dan tepat!</p>
+<h1>🔮 Spellcast Mini</h1>
 
-  <div class="spell" id="spell">Tekan mulai</div>
+<div id="grid"></div>
 
-  <input type="text" id="input" placeholder="Ketik di sini..." disabled>
-
-  <div class="info">
-    <span>⏱️ <span id="waktu">10</span>d</span>
-    <span>⭐ <span id="skor">0</span></span>
-    <span>🎯 Lv <span id="level">1</span></span>
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <button onclick="mulaiGame()">Mulai Game</button>
+<div id="info">
+  <p>Kata: <span id="kata">-</span></p>
+  <p>Skor: <span id="skor">0</span></p>
 </div>
 
+<button onclick="resetGame()">Reset Game</button>
+
 <script>
-  const daftarMantra = [
-    "api", "air", "tanah", "angin",
-    "cahaya", "gelap", "petir", "es",
-    "bayangan", "energi"
-  ];
+const ukuranGrid = 5;
+const huruf = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  let mantraSekarang = "";
-  let skor = 0;
-  let waktu = 10;
-  let level = 1;
-  let timer;
+let grid = [];
+let tileDipilih = [];
+let kataSekarang = "";
+let skor = 0;
 
-  const spell = document.getElementById("spell");
-  const input = document.getElementById("input");
-  const waktuEl = document.getElementById("waktu");
-  const skorEl = document.getElementById("skor");
-  const levelEl = document.getElementById("level");
-  const status = document.getElementById("status");
+// kamus sederhana (bisa kamu tambah sendiri)
+const kamus = [
+  "KATA","MAKAN","MINUM","API","AIR","BUKU","GAME","KODE","DATA","BOLA"
+];
 
-  function ambilMantra() {
-    return daftarMantra[Math.floor(Math.random() * daftarMantra.length)];
+function hurufAcak() {
+  return huruf[Math.floor(Math.random() * huruf.length)];
+}
+
+function buatGrid() {
+  const gridEl = document.getElementById("grid");
+  gridEl.innerHTML = "";
+  grid = [];
+
+  for (let i = 0; i < ukuranGrid * ukuranGrid; i++) {
+    const h = hurufAcak();
+    grid.push(h);
+
+    const tile = document.createElement("div");
+    tile.classList.add("tile");
+    tile.textContent = h;
+    tile.dataset.index = i;
+
+    tile.addEventListener("mousedown", mulaiPilih);
+    tile.addEventListener("mouseover", lanjutPilih);
+
+    gridEl.appendChild(tile);
   }
+}
 
-  function mulaiGame() {
-    skor = 0;
-    waktu = 10;
-    level = 1;
+function mulaiPilih(e) {
+  resetPilihan();
+  tambahTile(e.target);
+}
 
-    input.disabled = false;
-    input.value = "";
-    input.focus();
-
-    lanjutMantra();
-    updateUI();
-
-    clearInterval(timer);
-    timer = setInterval(hitungWaktu, 1000);
+function lanjutPilih(e) {
+  if (tileDipilih.length > 0 && e.buttons === 1) {
+    tambahTile(e.target);
   }
+}
 
-  function lanjutMantra() {
-    mantraSekarang = ambilMantra();
-    spell.textContent = mantraSekarang;
-    spell.style.transform = "scale(1.2)";
-    setTimeout(() => spell.style.transform = "scale(1)", 200);
+function tambahTile(tile) {
+  const index = tile.dataset.index;
+
+  if (!tileDipilih.includes(index)) {
+    tileDipilih.push(index);
+    tile.classList.add("selected");
+
+    kataSekarang += tile.textContent;
+    updateTampilan();
   }
+}
 
-  function hitungWaktu() {
-    waktu--;
-    waktuEl.textContent = waktu;
+function resetPilihan() {
+  tileDipilih = [];
+  kataSekarang = "";
 
-    if (waktu <= 0) {
-      clearInterval(timer);
-      selesaiGame();
-    }
-  }
-
-  function selesaiGame() {
-    input.disabled = true;
-    spell.textContent = "Game Selesai!";
-    status.textContent = "Coba lagi ya!";
-    status.className = "status salah";
-  }
-
-  function updateUI() {
-    skorEl.textContent = skor;
-    levelEl.textContent = level;
-    waktuEl.textContent = waktu;
-  }
-
-  input.addEventListener("input", () => {
-    if (input.value.toLowerCase() === mantraSekarang) {
-      skor++;
-      level = Math.floor(skor / 5) + 1;
-      waktu += 2;
-
-      status.textContent = "Benar!";
-      status.className = "status benar";
-
-      input.value = "";
-      lanjutMantra();
-      updateUI();
-    }
+  document.querySelectorAll(".tile").forEach(t => {
+    t.classList.remove("selected");
   });
+
+  updateTampilan();
+}
+
+function updateTampilan() {
+  document.getElementById("kata").textContent = kataSekarang || "-";
+  document.getElementById("skor").textContent = skor;
+}
+
+document.addEventListener("mouseup", () => {
+  cekKata();
+  resetPilihan();
+});
+
+function cekKata() {
+  if (kamus.includes(kataSekarang)) {
+    skor += kataSekarang.length * 10;
+    alert("✅ Kata benar: " + kataSekarang);
+  } else if (kataSekarang.length > 1) {
+    alert("❌ Kata tidak ada di kamus");
+  }
+}
+
+function resetGame() {
+  skor = 0;
+  buatGrid();
+  updateTampilan();
+}
+
+// mulai game
+buatGrid();
+updateTampilan();
 </script>
 
 </body>
